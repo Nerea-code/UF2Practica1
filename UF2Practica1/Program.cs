@@ -5,44 +5,53 @@ using System.Diagnostics;
 using System.Collections.Concurrent;
 using System.IO;
 
-namespace UF2Practica1
+namespace UF2Practica1 //Alumna: Nerea Tomás
 {
 	class MainClass
 	{
 		//Valors constants
-		#region Constants
-		const int nCaixeres = 3;
-
-		#endregion
+        //total Caixeres que disposa el programa
+		const int totalCaixeres = 3;
+        //una cua concurrent per poder gestionar els diversos clients
+        //cua pública i estàtica (una única cua comuna)
+        public static ConcurrentQueue<Client> cua = new ConcurrentQueue<Client>();
+        
 		/* Cua concurrent
 		 	Dos mètodes bàsics: 
 		 		Cua.Enqueue per afegir a la cua
 		 		bool success = Cua.TryDequeue(out clientActual) per extreure de la cua i posar a clientActual
 		*/
 
-		public static ConcurrentQueue<Client> cua = new ConcurrentQueue<Client>();
-
 		public static void Main(string[] args)
 		{
-			var clock = new Stopwatch();
+			//instanciem un rellotge xq controlarem el temps que tarda en gestionar-se tota la cua
+            var clock = new Stopwatch();
+            //instanciem una llista de threads per poder controlar els diversos fils
 			var threads = new List<Thread>();
+
 			//Recordeu-vos que el fitxer CSV ha d'estar a la carpeta bin/debug de la solució
-			const string fitxer = "CuaClients.csv";
+            //Codi per poder tenir l'arxiu CSV al directori del projecte
+            String currentDirectory = Directory.GetCurrentDirectory();
+            DirectoryInfo currentDirectoryInfo = new DirectoryInfo(currentDirectory);
+            //Tirem dos directoris enrere per sortir de bin/debug fins el directori del projecte
+            String ruta = currentDirectoryInfo.Parent.Parent.Parent.FullName;
+            const string fitxer = "CuaClients.csv";
+            ruta = Path.Combine(ruta, fitxer);
 
 			try
 			{
-				var reader = new StreamReader(File.OpenRead(@fitxer));
+				var reader = new StreamReader(File.OpenRead(@fitxer)); //ruta?
 
-
-				//Carreguem la llista clients
-
+				//Carreguem el llistat de clients a la cua concurrent
+                //que permet que els diferents Threads accedeixin a la cua sense problemes de concurrència. 
 				while (!reader.EndOfStream)
 				{
 					var line = reader.ReadLine();
 					var values = line.Split(';');
-					var tmp = new Client() { nom = values[0], carretCompra = Int32.Parse(values[1]) };
-					cua.Enqueue(tmp);
-
+                    //creem un nou client passant-li els seus paràmetres
+					var client = new Client() {nom = values[0], nProductes = Int32.Parse(values[1])};
+					//afegim el client a la cua concurrent
+                    cua.Enqueue(client);
 				}
 
 			}
@@ -56,16 +65,23 @@ namespace UF2Practica1
 			clock.Start();
 
 
-			// Instanciar les caixeres i afegir el thread creat a la llista de threads
+			//Instanciar les caixeres i afegir el thread creat a la llista de threads
+            for (int i = 0; i < totalCaixeres; i++)
+            {
+                var caixera = new Caixera() { idCaixera = i };
+                //var fil = new Thread(caixera.gestionarCua());
+                //fil.Start();
+                //thread.Add(fil);
+            }
 
 
-
-
-			// Procediment per esperar que acabin tots els threads abans d'acabar
+            //Procediment per esperar que acabin tots els threads abans de donar per finalitzat el procés
+            //El mètode Join s'usa per assegurar que un thread ha acabat. 
+            //Per tant, per cada thread de la llista de Threads, esperarem a que acabi.
 			foreach (Thread thread in threads)
 				thread.Join();
 
-			// Parem el rellotge i mostrem el temps que triga
+			//Parem el rellotge i mostrem el temps que s'ha tardat
 			clock.Stop();
 			double temps = clock.ElapsedMilliseconds / 1000;
 			Console.Clear();
@@ -73,6 +89,7 @@ namespace UF2Practica1
 			Console.ReadKey();
 		}
 	}
+
 	#region ClassCaixera
 	public class Caixera
 	{
@@ -82,42 +99,43 @@ namespace UF2Practica1
 			set;
 		}
 
-		public void ProcessarCua()
+		public void gestionarCua()
 		{
-			// Llegirem la cua extreient l'element
-			// cridem al mètode ProcesarCompra passant-li el client
+			// Cada caixera extreu un nou client
+            // Llegirem la cua extreient l'element
+            //bool success = Cua.TryDequeue(out clientActual) per extreure de la cua i posar a clientActual
+			// cridem al mètode gestionarCarro passant-li el client
 
+            //mentre hi hagi clients a la cua (no estigui buida)
+            //agafem un nou client i gestionem el carro d'aquest en qüestió
+           
 
 
 		}
 
-
-		private void ProcesarCompra(Client client)
+		private void gestionarCarro(Client client)
 		{
+            
+			Console.WriteLine("La caixera " + this.idCaixera + " comença amb el client " + client.nom + " que té " + client.nProductes + " productes");
 
-			Console.WriteLine("La caixera " + this.idCaixera + " comença amb el client " + client.nom + " que té " + client.carretCompra + " productes");
-
-			for (int i = 0; i < client.carretCompra; i++)
+            //hi ha un bucle per simular el pas dels diferents articles per l'escàner.
+			for (int i = 0; i < client.nProductes; i++)
 			{
-				this.ProcessaProducte();
-
+				this.gestionarProducte();
 			}
 
 			Console.WriteLine(">>>>>> La caixera " + this.idCaixera + " ha acabat amb el client " + client.nom);
 		}
 
-
-		private void ProcessaProducte()
+		private void gestionarProducte()
 		{
-			Thread.Sleep(TimeSpan.FromSeconds(1));
+            //simula el procés de l'escàner i introdueix una espera de 1 s.
+            Thread.Sleep(TimeSpan.FromSeconds(1));
 		}
 	}
-
-
 	#endregion
 
 	#region ClassClient
-
 	public class Client
 	{
 		public string nom
@@ -126,15 +144,12 @@ namespace UF2Practica1
 			set;
 		}
 
-
-		public int carretCompra
+		public int nProductes
 		{
 			get;
 			set;
 		}
-
-
 	}
-
 	#endregion
+
 }
