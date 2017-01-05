@@ -8,39 +8,41 @@ using System.IO;
 namespace UF2Practica1 //Alumna: Nerea Tomás
 {
 	class MainClass
-	{
-		//Valors constants
-        //total Caixeres que disposa el programa
-		const int totalCaixeres = 3;
-        //una cua concurrent per poder gestionar els diversos clients
-        //cua pública i estàtica (una única cua comuna)
-        public static ConcurrentQueue<Client> cua = new ConcurrentQueue<Client>();
+    {
+        #region Valors constants
+        const int totalCaixeres = 3; //total Caixeres que disposa el programa
+        const string fitxer = "CuaClients.csv"; //arxiu que conté informació clients
         
-		/* Cua concurrent
-		 	Dos mètodes bàsics: 
-		 		Cua.Enqueue per afegir a la cua
-		 		bool success = Cua.TryDequeue(out clientActual) per extreure de la cua i posar a clientActual
-		*/
+        public static ConcurrentQueue<Client> cua = new ConcurrentQueue<Client>();
+        /*cua concurrent per poder gestionar els diversos clients de l'arxiu
+          pública i estàtica (xq és una única cua comuna per a tot el programa)
+          Tres mètodes bàsics: 
+            - Enqueue method: per afegir item al final de la cua
+            - TryPeek method: intenta obtenir un item de la cua sense eliminar-lo de la llista
+            - TryDequeue method: intenta obtenir un item de la cua i l'elimina de la llista
+                bool isSuccessful = coll.TryDequeue(out item);
+                ambdós retornen True/False alhora que l'item en qüestió a través del paràmetre out
+        */
+        #endregion
 
-		public static void Main(string[] args)
+        public static void Main(string[] args)
 		{
-			//instanciem un rellotge xq controlarem el temps que tarda en gestionar-se tota la cua
-            var clock = new Stopwatch();
-            //instanciem una llista de threads per poder controlar els diversos fils
-			var threads = new List<Thread>();
+
+            var clock = new Stopwatch(); //rellotge x controlar el temps que tarda en gestionar-se tota la cua
+            var threads = new List<Thread>();  //llista de threads per poder controlar els diversos fils
 
 			//Recordeu-vos que el fitxer CSV ha d'estar a la carpeta bin/debug de la solució
             //Codi per poder tenir l'arxiu CSV al directori del projecte
             String currentDirectory = Directory.GetCurrentDirectory();
             DirectoryInfo currentDirectoryInfo = new DirectoryInfo(currentDirectory);
             //Tirem dos directoris enrere per sortir de bin/debug fins el directori del projecte
-            String ruta = currentDirectoryInfo.Parent.Parent.Parent.FullName;
-            const string fitxer = "CuaClients.csv";
+            String ruta = currentDirectoryInfo.Parent.Parent.FullName;
             ruta = Path.Combine(ruta, fitxer);
 
 			try
 			{
-				var reader = new StreamReader(File.OpenRead(@fitxer)); //ruta?
+				//obrim l'arxiu per llegir-lo
+                var reader = new StreamReader(File.OpenRead(@ruta)); 
 
 				//Carreguem el llistat de clients a la cua concurrent
                 //que permet que els diferents Threads accedeixin a la cua sense problemes de concurrència. 
@@ -69,9 +71,9 @@ namespace UF2Practica1 //Alumna: Nerea Tomás
             for (int i = 0; i < totalCaixeres; i++)
             {
                 var caixera = new Caixera() { idCaixera = i };
-                //var fil = new Thread(caixera.gestionarCua());
-                //fil.Start();
-                //thread.Add(fil);
+                var fil = new Thread(()=>caixera.gestionarCua()); //operadors lambda
+                fil.Start();
+                threads.Add(fil);
             }
 
 
@@ -101,15 +103,22 @@ namespace UF2Practica1 //Alumna: Nerea Tomás
 
 		public void gestionarCua()
 		{
-			// Cada caixera extreu un nou client
-            // Llegirem la cua extreient l'element
-            //bool success = Cua.TryDequeue(out clientActual) per extreure de la cua i posar a clientActual
-			// cridem al mètode gestionarCarro passant-li el client
-
+			//Cada caixera extreu un nou client de la cua per a tractar-lo
+            Client client;
+            bool isSuccessful = MainClass.cua.TryDequeue(out client);
+            if (isSuccessful == true){
+                gestionarCarro(client);
+            }
+            
+		
             //mentre hi hagi clients a la cua (no estigui buida)
             //agafem un nou client i gestionem el carro d'aquest en qüestió
            
-
+            /* Client client = null;
+            while(MainClass.cua.TryDequeue(out client))
+            {
+               ProcesarCompra(client);
+          }*/
 
 		}
 
@@ -132,7 +141,9 @@ namespace UF2Practica1 //Alumna: Nerea Tomás
             //simula el procés de l'escàner i introdueix una espera de 1 s.
             Thread.Sleep(TimeSpan.FromSeconds(1));
 		}
-	}
+
+        public Client client { get; set; }
+    }
 	#endregion
 
 	#region ClassClient
