@@ -61,7 +61,6 @@ namespace UF2Practica1 //Alumna: Nerea Tomás
             var clock = new Stopwatch(); //rellotge x controlar el temps que tarda en gestionar-se tota la cua
             var threads = new List<Thread>();  //llista de threads per poder controlar els diversos fils
 
-			//Recordeu-vos que el fitxer CSV ha d'estar a la carpeta bin/debug de la solució
             //Codi per poder tenir l'arxiu CSV al directori del projecte
             String currentDirectory = Directory.GetCurrentDirectory();
             DirectoryInfo currentDirectoryInfo = new DirectoryInfo(currentDirectory);
@@ -75,7 +74,7 @@ namespace UF2Practica1 //Alumna: Nerea Tomás
                 var reader = new StreamReader(File.OpenRead(@ruta)); 
 
 				//Carreguem el llistat de clients a la cua concurrent
-                //que permet que els diferents Threads accedeixin a la cua sense problemes de concurrència. 
+                //que permet que els diferents threads accedeixin a la cua sense problemes de concurrència. 
 				while (!reader.EndOfStream)
 				{
 					var line = reader.ReadLine();
