@@ -10,9 +10,8 @@ namespace UF2Practica1 //Alumna: Nerea Tomás
 	class MainClass
     {
         #region Valors constants
-        const int totalCaixeres = 3; //total Caixeres que disposa el programa
         const string fitxer = "CuaClients.csv"; //arxiu que conté informació clients
-        
+        public static int totalCaixeres = 0; //total Caixeres que disposa el programa
         public static ConcurrentQueue<Client> cua = new ConcurrentQueue<Client>();
         /*cua concurrent per poder gestionar els diversos clients de l'arxiu
           pública i estàtica (xq és una única cua comuna per a tot el programa)
@@ -20,13 +19,44 @@ namespace UF2Practica1 //Alumna: Nerea Tomás
             - Enqueue method: per afegir item al final de la cua
             - TryPeek method: intenta obtenir un item de la cua sense eliminar-lo de la llista
             - TryDequeue method: intenta obtenir un item de la cua i l'elimina de la llista
-                bool isSuccessful = coll.TryDequeue(out item);
                 ambdós retornen True/False alhora que l'item en qüestió a través del paràmetre out
+                bool isSuccessful = coll.TryDequeue(out item);
         */
         #endregion
 
         public static void Main(string[] args)
 		{
+            int resposta;
+            bool respostaOk = false;
+            Console.WriteLine("EXERCICI SUPERMERCAT");
+            Console.WriteLine("En el supòsit de que un supermercat té un total de fins a 8 caixes registradores...");
+            do
+            {
+                //preguntem de quantes caixeres disposem.
+                Console.WriteLine("De quantes caixeres disposem avui?");
+                try
+                {
+                    //controlem que el valor entrat per teclat sigui un numèric.
+                    resposta = int.Parse(Console.ReadLine());
+                    //i que sigui entre 1 i 8.
+                    if (resposta >= 1 && resposta <= 8)
+                    {
+                        totalCaixeres = resposta;
+                        respostaOk = true;
+                    }
+                    else
+                    {
+                        Console.WriteLine("Opció no vàlida.");
+                        Console.WriteLine("El valor expressat ha de ser entre 1 i 8.");
+                    }
+                
+                }
+                catch (Exception)
+                {
+                    Console.WriteLine("El valor introduït no és numèric.");
+                }
+            } while (respostaOk == false);
+
 
             var clock = new Stopwatch(); //rellotge x controlar el temps que tarda en gestionar-se tota la cua
             var threads = new List<Thread>();  //llista de threads per poder controlar els diversos fils
@@ -68,7 +98,7 @@ namespace UF2Practica1 //Alumna: Nerea Tomás
 
 
 			//Instanciar les caixeres i afegir el thread creat a la llista de threads
-            for (int i = 0; i < totalCaixeres; i++)
+            for (int i = 1; i <= totalCaixeres; i++)
             {
                 var caixera = new Caixera() { idCaixera = i };
                 var fil = new Thread(()=>caixera.gestionarCua()); //operadors lambda
@@ -86,9 +116,9 @@ namespace UF2Practica1 //Alumna: Nerea Tomás
 			//Parem el rellotge i mostrem el temps que s'ha tardat
 			clock.Stop();
 			double temps = clock.ElapsedMilliseconds / 1000;
-			Console.Clear();
 			Console.WriteLine("Temps total Task: " + temps + " segons");
 			Console.ReadKey();
+            //Console.Clear();
 		}
 	}
 
@@ -104,22 +134,15 @@ namespace UF2Practica1 //Alumna: Nerea Tomás
 		public void gestionarCua()
 		{
 			//Cada caixera extreu un nou client de la cua per a tractar-lo
-            Client client;
-            bool isSuccessful = MainClass.cua.TryDequeue(out client);
-            if (isSuccessful == true){
+            //mentre hi hagi clients a la cua (no estigui buida), agafem un nou client i gestionem el carro 
+
+            while (!MainClass.cua.IsEmpty)
+            {
+                Client client = new Client();
+                MainClass.cua.TryDequeue(out client);
+                //no pregunto pel booleà xq si hem entrat al bucle es xq encara hi ha clients a la cua, no?
                 gestionarCarro(client);
             }
-            
-		
-            //mentre hi hagi clients a la cua (no estigui buida)
-            //agafem un nou client i gestionem el carro d'aquest en qüestió
-           
-            /* Client client = null;
-            while(MainClass.cua.TryDequeue(out client))
-            {
-               ProcesarCompra(client);
-          }*/
-
 		}
 
 		private void gestionarCarro(Client client)
@@ -141,8 +164,6 @@ namespace UF2Practica1 //Alumna: Nerea Tomás
             //simula el procés de l'escàner i introdueix una espera de 1 s.
             Thread.Sleep(TimeSpan.FromSeconds(1));
 		}
-
-        public Client client { get; set; }
     }
 	#endregion
 
